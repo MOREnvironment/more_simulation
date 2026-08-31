@@ -1,0 +1,24 @@
+{
+    "ScriptPath": "/home/luka/fer/rpp/libraries/more_simulation/more_simulation/simulation.py",
+    "Language": "python",
+    "Configurations": {
+        "Default2": {
+            "Description": "Default configuration",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "b8844e3c-0958-4ec9-b7b2-e186be6fbf56",
+                        "PluginName": "more_dynamics::HullVessel"
+                    }
+                ]
+            }
+        },
+        "aaa": {
+            "Components": {}
+        }
+    },
+    "ActiveConfiguration": "Default2",
+    "Spec": {
+        "vessels": "List[more_dynamics::VehicleModel3D]"
+    }
+}

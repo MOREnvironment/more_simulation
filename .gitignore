@@ -17,6 +17,8 @@ eggs/
 lib/
 lib64/
 parts/
+!/.rppws/parts/
+!/.rppws/parts/**
 sdist/
 var/
 wheels/

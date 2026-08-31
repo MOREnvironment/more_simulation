@@ -1,0 +1,13 @@
+{
+    "Id": "b8844e3c-0958-4ec9-b7b2-e186be6fbf56",
+    "Name": "HullVessel_comp",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::HullVessel",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "sensors": "List[more_sensors::Sensor]",
+        "actuators": "List[more_dynamics::ForceProducer]"
+    },
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}
