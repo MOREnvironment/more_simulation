@@ -1,75 +1,52 @@
-import json
 from pathlib import Path
-from types import SimpleNamespace
 from typing import List
 
 import casadi as ca
 import numpy as np
+from rpp_py.data_manager import DataManager
+DataManager() # triggers sourcing of rpp_plugin_types
 from more_common.casadi_graph import RppCasadiGraph
 from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context_builder import ComponentContextBuilder
-from rpp_py.data_manager import DataManager
 
 
 class Simulation:
     COMPONENTS = {
         "vessels": "List[more_dynamics::VehicleModel3D]",
     }
+    RPP_SCRIPT_LIBRARY = "more_simulation"
+    RPP_SCRIPT_NAME = "simulation"
 
     def __init__(
         self,
         delta_t: float = 0.1,
         duration: float = 35.0,
-        script_path: Path | None = None,
+        rpp_workspace: Path | str | None = None,
+        rpp_configuration: str | None = None,
     ):
         if delta_t <= 0.0:
             raise ValueError("delta_t must be greater than zero")
         if duration < 0.0:
             raise ValueError("duration cannot be negative")
+        if rpp_workspace is None or not str(rpp_workspace).strip():
+            raise ValueError("rpp_workspace must be specified")
 
         self.delta_t = delta_t
         self.duration = duration
         self.results = []
 
-        data_manager = DataManager()
-        data_manager.load_script_description = self._load_script_description
+        data_manager = DataManager(workspace_path=rpp_workspace)
         self.context_builder = ComponentContextBuilder(
             data_manager=data_manager
         )
-        script_path = (script_path or Path(__file__)).resolve()
-        if self._has_source_workspace(script_path):
-            self.rpp_context = self.context_builder.build_from_script(
-                str(script_path)
-            )
-        else:
-            description = self._installed_script_description()
-            self.rpp_context = (
-                self.context_builder.build_from_script_description(
-                    str(description)
-                )
-            )
+        self.rpp_context = self.context_builder.build_script_from_library(
+            self.RPP_SCRIPT_LIBRARY,
+            self.RPP_SCRIPT_NAME,
+            configuration=rpp_configuration,
+        )
         self.rpp_context.initialize()
         self.vessels: List[VehicleModel3D] = self.rpp_context.get_component(
             "vessels"
-        )
-
-    @staticmethod
-    def _load_script_description(script_path: str):
-        """Load legacy and named-configuration script descriptions."""
-        with Path(script_path).open(encoding="utf-8") as description_file:
-            description = json.load(description_file)
-
-        components = description.get("Components")
-        configurations = description.get("Configurations")
-        if components is None and configurations:
-            active = description.get("ActiveConfiguration")
-            if active not in configurations:
-                active = next(iter(configurations))
-            components = configurations[active].get("Components", {})
-
-        return SimpleNamespace(
-            components=components or {},
-            spec=description.get("Spec", {}),
         )
 
     def run(self):
@@ -142,21 +119,3 @@ class Simulation:
             else:
                 initial_conditions.extend([0.0] * state_description.size)
         return ca.DM(initial_conditions)
-
-    @staticmethod
-    def _installed_script_description() -> Path:
-        from ament_index_python.packages import get_package_share_directory
-
-        package_share = Path(get_package_share_directory("more_simulation"))
-        return (
-            package_share
-            / ".rppws"
-            / "script_descriptions"
-            / "simulation.json"
-        )
-
-    @staticmethod
-    def _has_source_workspace(script_path: Path) -> bool:
-        return any(
-            (parent / ".rppws").is_dir() for parent in script_path.parents
-        )

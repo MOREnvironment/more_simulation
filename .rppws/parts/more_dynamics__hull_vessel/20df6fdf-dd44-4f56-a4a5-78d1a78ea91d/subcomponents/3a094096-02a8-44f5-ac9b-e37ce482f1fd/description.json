@@ -1,0 +1,17 @@
+{
+    "Id": "3a094096-02a8-44f5-ac9b-e37ce482f1fd",
+    "Name": "JetNozzle_comp",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::JetNozzle",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "20df6fdf-dd44-4f56-a4a5-78d1a78ea91d",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::HullVessel",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

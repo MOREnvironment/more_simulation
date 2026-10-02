@@ -1,7 +1,20 @@
+from pathlib import Path
+
 from setuptools import find_packages, setup
 
 
 package_name = "more_simulation"
+rppws_root = Path(".rppws")
+rppws_data_files = [
+    (
+        str(Path("share") / package_name / path.parent),
+        [str(path)],
+    )
+    for path in sorted(rppws_root.rglob("*"))
+    if path.is_file()
+]
+
+
 setup(
     name=package_name,
     version="0.1.0",
@@ -12,31 +25,7 @@ setup(
             [f"resource/{package_name}"],
         ),
         (f"share/{package_name}", ["package.xml"]),
-        (
-            f"share/{package_name}/.rppws/script_descriptions",
-            [".rppws/script_descriptions/simulation.json"],
-        ),
-        (
-            f"share/{package_name}/.rppws/parts/"
-            "more_dynamics__hull_vessel/"
-            "b8844e3c-0958-4ec9-b7b2-e186be6fbf56",
-            [
-                ".rppws/parts/more_dynamics__hull_vessel/"
-                "b8844e3c-0958-4ec9-b7b2-e186be6fbf56/callbacks.py",
-                ".rppws/parts/more_dynamics__hull_vessel/"
-                "b8844e3c-0958-4ec9-b7b2-e186be6fbf56/description.json",
-            ],
-        ),
-        (
-            f"share/{package_name}/.rppws/parts/"
-            "more_dynamics__hull_vessel/"
-            "b8844e3c-0958-4ec9-b7b2-e186be6fbf56/params",
-            [
-                ".rppws/parts/more_dynamics__hull_vessel/"
-                "b8844e3c-0958-4ec9-b7b2-e186be6fbf56/params/parameters.py",
-            ],
-        ),
-    ],
+    ] + rppws_data_files,
     install_requires=[
         "casadi>=3.5.5",
         "matplotlib",
@@ -55,6 +44,7 @@ setup(
     entry_points={
         "console_scripts": [
             "simulation = more_simulation.main:main",
+            "simulation_ros = more_simulation.simulation_ros:main",
         ],
     },
 )

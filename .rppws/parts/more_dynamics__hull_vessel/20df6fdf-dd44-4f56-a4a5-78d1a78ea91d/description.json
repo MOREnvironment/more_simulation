@@ -1,0 +1,52 @@
+{
+    "Id": "20df6fdf-dd44-4f56-a4a5-78d1a78ea91d",
+    "Name": "Jetski",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::HullVessel",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "sensors": "List[more_sensors::Sensor]",
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "sensors": [
+            {
+                "Id": "5b7009c2-b520-4613-8635-36a4e5c95a6c",
+                "PluginType": "more_sensors::Sensor",
+                "PluginName": "more_sensors::PoseSensor",
+                "SlotName": "sensors",
+                "Library": "more_sensors",
+                "IsLinked": false
+            }
+        ],
+        "actuators": [
+            {
+                "Id": "3a094096-02a8-44f5-ac9b-e37ce482f1fd",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::JetNozzle",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ],
+        "hydrostatics": {
+            "Id": "50c1c8b8-15ee-4c0e-8354-2925ace3eba4",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::LinearSurfaceHydrostatics",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "19e45689-8118-4bb1-a51d-e531e944bc45",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::LinearSurfaceHydrodynamics",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}

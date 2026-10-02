@@ -1,0 +1,17 @@
+{
+    "Id": "19e45689-8118-4bb1-a51d-e531e944bc45",
+    "Name": "LinearSurfaceHydrodynamics",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::LinearSurfaceHydrodynamics",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "20df6fdf-dd44-4f56-a4a5-78d1a78ea91d",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::HullVessel",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}
