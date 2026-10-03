@@ -45,6 +45,7 @@ setup(
         "console_scripts": [
             "simulation = more_simulation.main:main",
             "simulation_ros = more_simulation.simulation_ros:main",
+            "simulation_plotter = more_simulation.simulation_plotter:main",
         ],
     },
 )

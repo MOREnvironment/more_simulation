@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from math import ceil, cos, sin
 from pathlib import Path
 
@@ -71,6 +72,9 @@ class SimulationRos(Node):
         self._command = self._zero_command
         self._last_command_received_at_nanoseconds: int | None = None
         self._rk4_step = self._create_rk4_step()
+        self._last_realtime_step_at = time.monotonic()
+        self._step_accumulator = 0.0
+        self._last_realtime_warning_at: float | None = None
         self._ros_time_origin_nanoseconds: int | None = None
         self._command_latch_duration = self._non_negative_float_parameter(
             "command_latch_duration", 0.5
@@ -161,6 +165,8 @@ class SimulationRos(Node):
         self._position_lines = []
         self._orientation_axis = None
         self._orientation_lines = []
+        self._yaw_axis = None
+        self._yaw_line = None
         self._linear_velocity_axis = None
         self._linear_velocity_lines = []
         self._angular_velocity_axis = None
@@ -195,7 +201,19 @@ class SimulationRos(Node):
         )
 
     def _timer_callback(self) -> None:
-        """Apply the latest command while it remains inside the latch window."""
+        """Advance fixed simulation steps until the wall-clock deadline."""
+        callback_started_at = time.perf_counter()
+        current_realtime = time.monotonic()
+        elapsed_realtime = max(
+            0.0, current_realtime - self._last_realtime_step_at
+        )
+        self._last_realtime_step_at = current_realtime
+        self._step_accumulator += elapsed_realtime
+        step_count = int(self._step_accumulator / self._delta_t)
+        if step_count == 0:
+            return
+        self._step_accumulator -= step_count * self._delta_t
+
         current_time_nanoseconds = self.get_clock().now().nanoseconds
         command_age_nanoseconds = None
         if self._last_command_received_at_nanoseconds is not None:
@@ -212,10 +230,57 @@ class SimulationRos(Node):
             self._command if command_is_fresh else self._zero_command
         )
 
-        self._state = self._rk4_step(self._state, applied_command)
+        integration_started_at = time.perf_counter()
+        for _ in range(step_count):
+            self._state = self._rk4_step(self._state, applied_command)
+        integration_duration = time.perf_counter() - integration_started_at
+
+        publish_started_at = time.perf_counter()
         self._publish_current_state()
+        publish_duration = time.perf_counter() - publish_started_at
         if self._output_logging:
             self._log_runtime_status(applied_command)
+        self._log_realtime_overrun(
+            current_realtime,
+            elapsed_realtime,
+            step_count,
+            integration_duration,
+            publish_duration,
+            time.perf_counter() - callback_started_at,
+        )
+
+    def _log_realtime_overrun(
+        self,
+        current_realtime: float,
+        elapsed_realtime: float,
+        step_count: int,
+        integration_duration: float,
+        publish_duration: float,
+        callback_duration: float,
+    ) -> None:
+        """Report deadline misses without allowing rendering to slow dynamics."""
+        if (
+            elapsed_realtime <= 1.5 * self._delta_t
+            and callback_duration <= self._delta_t
+        ):
+            return
+        if (
+            self._last_realtime_warning_at is not None
+            and current_realtime - self._last_realtime_warning_at < 1.0
+        ):
+            return
+        self._last_realtime_warning_at = current_realtime
+        self.get_logger().warning(
+            "Real-time overrun: elapsed=%.3f s, catch_up_steps=%d, "
+            "integration=%.3f s, publishing=%.3f s, callback=%.3f s"
+            % (
+                elapsed_realtime,
+                step_count,
+                integration_duration,
+                publish_duration,
+                callback_duration,
+            )
+        )
 
     def _command_callback(self, message: Float64MultiArray) -> None:
         """Save a valid command for one upcoming timer callback."""
@@ -477,12 +542,21 @@ class SimulationRos(Node):
             self._orientation_axis = axes[0]
             self._orientation_lines = [
                 axes[0].plot([], [], label=label)[0]
-                for label in ("roll", "pitch", "yaw")
+                for label in ("roll", "pitch")
             ]
-            axes[0].set_ylabel("Angle [rad]")
+            axes[0].set_ylabel("Roll/pitch [rad]")
             axes[0].set_title("Vehicle orientation and position")
             axes[0].grid(True)
-            axes[0].legend()
+            self._yaw_axis = axes[0].twinx()
+            self._yaw_line = self._yaw_axis.plot(
+                [], [], label="yaw", color="tab:green"
+            )[0]
+            self._yaw_axis.set_ylabel("Yaw [rad]")
+            axes[0].legend(
+                self._orientation_lines + [self._yaw_line],
+                [line.get_label() for line in self._orientation_lines]
+                + [self._yaw_line.get_label()],
+            )
 
             self._position_axis = axes[1]
             self._position_lines = [
@@ -610,7 +684,9 @@ class SimulationRos(Node):
             for index, line in enumerate(self._orientation_lines):
                 line.set_data(time, orientation[:, index])
             self._rescale_axis(self._orientation_axis)
-            self._orientation_axis.set_ylim(-np.pi, np.pi)
+            if self._yaw_axis is not None and self._yaw_line is not None:
+                self._yaw_line.set_data(time, orientation[:, 2])
+                self._rescale_axis(self._yaw_axis)
 
         if self._linear_velocity_axis is not None:
             for index, line in enumerate(self._linear_velocity_lines):
