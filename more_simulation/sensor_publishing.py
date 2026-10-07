@@ -5,25 +5,33 @@ from dataclasses import dataclass
 from math import cos, sin
 from typing import Any
 
-import casadi as ca
 import numpy as np
-from geometry_msgs.msg import PoseStamped, TwistStamped
+from geometry_msgs.msg import PointStamped, PoseStamped, TwistStamped
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.qos import QoSProfile
-from sensor_msgs.msg import Imu, NavSatFix
+from sensor_msgs.msg import FluidPressure, Imu, MagneticField, NavSatFix
 
 from more_common.casadi_graph import RppCasadiGraph
+from more_sensors.models import SensorSampler
 
 
-SensorMessage = Imu | NavSatFix | PoseStamped | TwistStamped
+SensorMessage = (
+    FluidPressure
+    | Imu
+    | MagneticField
+    | NavSatFix
+    | PointStamped
+    | PoseStamped
+    | TwistStamped
+)
 
 
 @dataclass(frozen=True)
 class _SensorPublication:
-    """A configured sensor graph and its ROS publisher."""
+    """A configured sensor sampler and its ROS publisher."""
 
-    graph: RppCasadiGraph
+    sampler: SensorSampler
     publisher: Publisher
     message_name: str
 
@@ -32,11 +40,15 @@ class SensorPublisher:
     """Map sensor message names to ROS messages and publish them."""
 
     _VESSEL_STATE_SIZE = 12
+    _VESSEL_ACCELERATION_SIZE = 6
     _MESSAGE_TYPES: dict[str, tuple[type, str]] = {
         "PoseStamped": (PoseStamped, "pose"),
         "TwistStamped": (TwistStamped, "dvl"),
         "Imu": (Imu, "imu"),
         "NavSatFix": (NavSatFix, "gnss"),
+        "FluidPressure": (FluidPressure, "pressure"),
+        "PointStamped": (PointStamped, "sbl"),
+        "MagneticField": (MagneticField, "mag"),
     }
 
     def __init__(
@@ -57,14 +69,17 @@ class SensorPublisher:
         self,
         vessel_state: np.ndarray,
         ros_time_nanoseconds: int,
+        vessel_acceleration: np.ndarray | None = None,
     ) -> None:
-        """Evaluate and publish every configured sensor measurement."""
+        """Sample and publish every sensor measurement that is due."""
         for publication in self._publications:
-            output = publication.graph.output(
-                ca.DM.zeros(publication.graph.num_states, 1),
-                ca.DM(vessel_state.reshape((-1, 1))),
+            values = publication.sampler.sample(
+                vessel_state,
+                ros_time_nanoseconds * 1e-9,
+                vessel_acceleration,
             )
-            values = np.asarray(output.full(), dtype=float).reshape(-1)
+            if values is None:
+                continue
             if not np.all(np.isfinite(values)):
                 raise ValueError(
                     f"sensor {publication.message_name} returned "
@@ -75,6 +90,7 @@ class SensorPublisher:
                     publication.message_name,
                     values,
                     ros_time_nanoseconds,
+                    publication.sampler.noise.white_noise_std**2,
                 )
             )
 
@@ -85,7 +101,8 @@ class SensorPublisher:
         publications = []
         topic_counts: dict[str, int] = {}
         for sensor_index, sensor in enumerate(sensors):
-            graph = RppCasadiGraph(sensor.graph())
+            sampler = SensorSampler(sensor.graph())
+            graph = sampler.graph
             self._validate_sensor_graph(sensor_index, graph)
 
             message_name = str(
@@ -111,7 +128,7 @@ class SensorPublisher:
                 topic = f"{topic}_{topic_count}"
             publications.append(
                 _SensorPublication(
-                    graph=graph,
+                    sampler=sampler,
                     publisher=self._node.create_publisher(
                         message_type,
                         topic,
@@ -128,10 +145,15 @@ class SensorPublisher:
         sensor_index: int,
         graph: RppCasadiGraph,
     ) -> None:
-        if graph.num_inputs != cls._VESSEL_STATE_SIZE:
+        if graph.num_inputs not in (
+            cls._VESSEL_STATE_SIZE,
+            cls._VESSEL_STATE_SIZE + cls._VESSEL_ACCELERATION_SIZE,
+        ):
             raise ValueError(
                 f"sensor {sensor_index} must accept a "
-                f"{cls._VESSEL_STATE_SIZE}-value vessel state"
+                f"{cls._VESSEL_STATE_SIZE}-value vessel state, optionally "
+                f"followed by a {cls._VESSEL_ACCELERATION_SIZE}-value "
+                "body acceleration"
             )
         if graph.num_states != 0 or graph.step is not None:
             raise ValueError(f"sensor {sensor_index} must be stateless")
@@ -143,6 +165,7 @@ class SensorPublisher:
         message_name: str,
         values: np.ndarray,
         ros_time_nanoseconds: int,
+        variances: np.ndarray,
     ) -> SensorMessage:
         if message_name == "PoseStamped":
             self._require_size(message_name, values, 6)
@@ -170,7 +193,7 @@ class SensorPublisher:
             return message
 
         if message_name == "Imu":
-            self._require_size(message_name, values, 6)
+            self._require_size(message_name, values, 9)
             message = Imu()
             self._set_header(message, ros_time_nanoseconds)
             quaternion = self._quaternion_from_euler(
@@ -183,7 +206,19 @@ class SensorPublisher:
             message.angular_velocity.x = float(values[3])
             message.angular_velocity.y = float(values[4])
             message.angular_velocity.z = float(values[5])
-            message.linear_acceleration_covariance[0] = -1.0
+            message.linear_acceleration.x = float(values[6])
+            message.linear_acceleration.y = float(values[7])
+            message.linear_acceleration.z = float(values[8])
+            for axis in range(3):
+                message.orientation_covariance[4 * axis] = float(
+                    variances[axis]
+                )
+                message.angular_velocity_covariance[4 * axis] = float(
+                    variances[3 + axis]
+                )
+                message.linear_acceleration_covariance[4 * axis] = float(
+                    variances[6 + axis]
+                )
             return message
 
         if message_name == "NavSatFix":
@@ -193,6 +228,36 @@ class SensorPublisher:
             message.latitude = float(values[0])
             message.longitude = float(values[1])
             message.altitude = float(values[2])
+            return message
+
+        if message_name == "FluidPressure":
+            self._require_size(message_name, values, 1)
+            message = FluidPressure()
+            self._set_header(message, ros_time_nanoseconds)
+            message.fluid_pressure = float(values[0])
+            message.variance = float(variances[0])
+            return message
+
+        if message_name == "MagneticField":
+            self._require_size(message_name, values, 3)
+            message = MagneticField()
+            self._set_header(message, ros_time_nanoseconds)
+            message.magnetic_field.x = float(values[0])
+            message.magnetic_field.y = float(values[1])
+            message.magnetic_field.z = float(values[2])
+            for axis in range(3):
+                message.magnetic_field_covariance[4 * axis] = float(
+                    variances[axis]
+                )
+            return message
+
+        if message_name == "PointStamped":
+            self._require_size(message_name, values, 3)
+            message = PointStamped()
+            self._set_header(message, ros_time_nanoseconds)
+            message.point.x = float(values[0])
+            message.point.y = float(values[1])
+            message.point.z = float(values[2])
             return message
 
         raise ValueError(f"unsupported sensor message {message_name!r}")

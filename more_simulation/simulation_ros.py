@@ -29,6 +29,7 @@ class SimulationRos(Node):
     """Advance one configured vehicle with a fixed-step RK4 timer."""
 
     _VEHICLE_STATE_SIZE = 12
+    _VEHICLE_ACCELERATION_SIZE = 6
     _PERFORMANCE_ESTIMATE_DURATION = 15.0
     _MAX_PERFORMANCE_ESTIMATE_STEPS = 1_500
 
@@ -457,6 +458,7 @@ class SimulationRos(Node):
         self._sensor_publisher.publish(
             vehicle_state,
             ros_time_nanoseconds,
+            self._vehicle_acceleration(),
         )
 
         if (
@@ -475,6 +477,12 @@ class SimulationRos(Node):
         output = self._graph.output(self._state, self._command)
         return np.asarray(output.full(), dtype=float).reshape(-1)[
             : self._VEHICLE_STATE_SIZE
+        ]
+
+    def _vehicle_acceleration(self) -> np.ndarray:
+        state_derivative = self._graph.step(self._state, self._command)
+        return np.asarray(state_derivative.full(), dtype=float).reshape(-1)[
+            -self._VEHICLE_ACCELERATION_SIZE:
         ]
 
     def _odometry_message(

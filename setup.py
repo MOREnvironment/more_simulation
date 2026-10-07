@@ -31,6 +31,7 @@ setup(
         "matplotlib",
         "more_common>=0.1.0",
         "more_dynamics>=0.1.0",
+        "more_sensors>=0.1.0",
         "numpy",
         "rpp-py>=0.1.0",
         "setuptools",
