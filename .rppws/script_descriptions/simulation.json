@@ -11,6 +11,16 @@
                     }
                 ]
             }
+        },
+        "JetLocalization": {
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "cc39e58c-0efb-4a2f-b56d-8f0cc20530d3",
+                        "PluginName": "more_dynamics::HullVessel"
+                    }
+                ]
+            }
         }
     },
     "ActiveConfiguration": "Jet",

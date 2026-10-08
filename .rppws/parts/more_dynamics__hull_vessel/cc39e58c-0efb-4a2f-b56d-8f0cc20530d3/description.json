@@ -1,0 +1,76 @@
+{
+    "Id": "cc39e58c-0efb-4a2f-b56d-8f0cc20530d3",
+    "Name": "JetskiNav",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::HullVessel",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "sensors": "List[more_sensors::Sensor]",
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "sensors": [
+            {
+                "Id": "6906aec0-3680-4cf9-b616-52e1beefd448",
+                "PluginType": "more_sensors::Sensor",
+                "PluginName": "more_sensors::PoseSensor",
+                "SlotName": "sensors",
+                "Library": "more_sensors",
+                "IsLinked": false
+            },
+            {
+                "Id": "210e896b-c82c-43b2-9d65-17e12347f3b9",
+                "PluginType": "more_sensors::Sensor",
+                "PluginName": "more_sensors::IMU",
+                "SlotName": "sensors",
+                "Library": "more_sensors",
+                "IsLinked": false
+            },
+            {
+                "Id": "f02a7328-b24e-4a17-94eb-afe6dc34407b",
+                "PluginType": "more_sensors::Sensor",
+                "PluginName": "more_sensors::DVL",
+                "SlotName": "sensors",
+                "Library": "more_sensors",
+                "IsLinked": false
+            },
+            {
+                "Id": "92dd434f-3a54-451a-a549-976641767944",
+                "PluginType": "more_sensors::Sensor",
+                "PluginName": "more_sensors::PoseSensor",
+                "SlotName": "sensors",
+                "Library": "more_sensors",
+                "IsLinked": false
+            }
+        ],
+        "actuators": [
+            {
+                "Id": "33cabbef-6c23-42df-9180-ca6796856896",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::JetNozzle",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ],
+        "hydrostatics": {
+            "Id": "b3d46f98-9274-45f1-9465-151007ef4d67",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::LinearSurfaceHydrostatics",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "4d55d433-6ed9-429c-9ea0-d99e1010fa6b",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::LinearSurfaceHydrodynamics",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}

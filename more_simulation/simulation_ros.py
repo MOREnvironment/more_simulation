@@ -126,6 +126,7 @@ class SimulationRos(Node):
             self._child_frame_id,
             qos,
             prefix_topics_with_sim=self._prefix_sensor_topics_with_sim,
+            world_frame_id=self._frame_id,
         )
         self._io_descriptions_service = self.create_service(
             Trigger,

@@ -25,6 +25,14 @@ setup(
             [f"resource/{package_name}"],
         ),
         (f"share/{package_name}", ["package.xml"]),
+        (
+            f"share/{package_name}/launch",
+            [str(path) for path in sorted(Path("launch").glob("*.launch.py"))],
+        ),
+        (
+            f"share/{package_name}/config",
+            [str(path) for path in sorted(Path("config").glob("*.yaml"))],
+        ),
     ] + rppws_data_files,
     install_requires=[
         "casadi>=3.5.5",
@@ -47,6 +55,7 @@ setup(
             "simulation = more_simulation.main:main",
             "simulation_ros = more_simulation.simulation_ros:main",
             "simulation_plotter = more_simulation.simulation_plotter:main",
+            "odometry_error = more_simulation.odometry_error:main",
         ],
     },
 )
