@@ -56,6 +56,7 @@ setup(
             "simulation_ros = more_simulation.simulation_ros:main",
             "simulation_plotter = more_simulation.simulation_plotter:main",
             "odometry_error = more_simulation.odometry_error:main",
+            "command_twist = more_simulation.command_twist:main",
         ],
     },
 )

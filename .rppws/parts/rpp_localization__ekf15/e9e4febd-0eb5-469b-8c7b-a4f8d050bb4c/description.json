@@ -1,0 +1,21 @@
+{
+    "Id": "e9e4febd-0eb5-469b-8c7b-a4f8d050bb4c",
+    "Name": "JetskiFilter",
+    "PluginType": "rpp_localization::LocalizationFilter15",
+    "PluginName": "rpp_localization::Ekf15",
+    "Library": "rpp_localization",
+    "SubcomponentSpec": {
+        "model": "rpp_localization::NavModel15"
+    },
+    "Subcomponents": {
+        "model": {
+            "Id": "1a405bcb-2f61-4dec-b25d-bdba96072ae3",
+            "PluginType": "rpp_localization::NavModel15",
+            "PluginName": "rpp_localization::VehicleModel3DNavModel15",
+            "SlotName": "model",
+            "Library": "rpp_localization",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}

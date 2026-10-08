@@ -298,6 +298,13 @@ class SensorPublisher:
             message.latitude = float(values[0])
             message.longitude = float(values[1])
             message.altitude = float(values[2])
+            # The covariance is in metres as east, north, up.
+            for axis in range(3):
+                message.position_covariance[4 * axis] = float(variances[axis])
+            if np.any(variances > 0.0):
+                message.position_covariance_type = (
+                    NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
+                )
             return message
 
         if message_name == "FluidPressure":

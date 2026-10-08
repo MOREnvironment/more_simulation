@@ -1,0 +1,26 @@
+{
+    "ScriptPath": "include/rpp_localization/ros/localization_script.hpp",
+    "Language": "cpp",
+    "Configurations": {
+        "Default": {
+            "Components": {}
+        },
+        "jetski": {
+            "Components": {
+                "filter": [
+                    {
+                        "Id": "e9e4febd-0eb5-469b-8c7b-a4f8d050bb4c",
+                        "PluginName": "rpp_localization::Ekf15"
+                    }
+                ]
+            }
+        }
+    },
+    "ActiveConfiguration": "Default",
+    "Spec": {
+        "filter": "rpp_localization::LocalizationFilter15"
+    },
+    "Linked": true,
+    "ScriptName": "rpp_localization::localization",
+    "ScriptLibrary": "rpp_localization"
+}

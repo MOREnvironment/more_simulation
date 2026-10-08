@@ -1,8 +1,8 @@
 {
-    "Id": "92dd434f-3a54-451a-a549-976641767944",
-    "Name": "NavPosition",
+    "Id": "977be065-695a-4085-87c1-4b10e4d56dbc",
+    "Name": "NavGnss",
     "PluginType": "more_sensors::Sensor",
-    "PluginName": "more_sensors::PoseSensor",
+    "PluginName": "more_sensors::GNSS",
     "Library": "more_sensors",
     "SubcomponentSpec": {},
     "Subcomponents": {},
