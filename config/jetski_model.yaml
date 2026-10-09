@@ -8,11 +8,3 @@
     # Throttle arrives as linear x and steering as angular z of cmd_vel.
     use_control: true
     control_config: [true, false, false, false, false, true]
-
-    # The filter drops a control axis whose acceleration is measured, so the
-    # IMU contributes orientation and angular velocity only.
-    imu0_config: [false, false, false,
-                  true, true, true,
-                  false, false, false,
-                  true, true, true,
-                  false, false, false]

@@ -30,9 +30,11 @@ ros2 topic pub -r 10 /cmd_out std_msgs/msg/Float64MultiArray "{data: [0.2, 0.3]}
 ros2 run more_simulation odometry_error --warmup 5 --duration 20
 ```
 
+`filter:=ekf` (the default) runs the 15-state EKF. With it,
 `process_model:=jetski` (the default) predicts with the jetski dynamics and
-the commands on `cmd_out`; `process_model:=constant_acceleration` uses the
-generic model of `rpp_localization`. GNSS fixes reach the filter through
+the commands on `cmd_out`, and `process_model:=constant_acceleration` uses
+the generic model of `rpp_localization`. `filter:=inekf` runs the invariant
+EKF, which predicts with the IMU. GNSS fixes reach the filter through
 `navsat_pose_node`, whose `datum` in `config/jetski_localization.yaml` must
 match the `fix_location` of the simulated GNSS. `odometry_error` reports the
 error of `odometry/filtered` against `sim/odometry`.

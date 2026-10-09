@@ -1,0 +1,27 @@
+# Invariant EKF of rpp_localization on the JetLocalization simulation
+# configuration. The IMU drives the prediction; GNSS and DVL correct it.
+/**:
+  ros__parameters:
+    script: rpp_localization::invariant_localization
+    configuration: inekf
+    world_frame: odom
+    base_link_frame: base_link
+    publish_tf: true
+
+    imu0: imu/data
+    imu0_use_orientation: true
+
+    # GNSS fixes converted to the world frame by navsat_pose_node. A pose is
+    # stamped with the world frame, so the antenna frame is named here.
+    pose0: gnss/pose
+    pose0_frame: gnss_link
+
+    twist0: dvl/data
+
+    # navsat_pose_node: must match fix_location of the simulated GNSS.
+    datum: [45.8007257, 15.9721655, 0.0]
+
+    # Rotation, velocity, position, gyroscope bias, accelerometer bias.
+    initial_estimate_covariance:
+      [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2,
+       1.0e-4, 1.0e-4, 1.0e-4, 1.0e-2, 1.0e-2, 1.0e-2]

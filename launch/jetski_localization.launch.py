@@ -12,15 +12,33 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     share_directory = Path(get_package_share_directory("more_simulation"))
+    uses_inekf = PythonExpression(
+        ["'", LaunchConfiguration("filter"), "' == 'inekf'"]
+    )
     uses_jetski_model = PythonExpression(
-        ["'", LaunchConfiguration("process_model"), "' == 'jetski'"]
+        [
+            "'", LaunchConfiguration("filter"), "' == 'ekf' and '",
+            LaunchConfiguration("process_model"), "' == 'jetski'",
+        ]
+    )
+    uses_constant_acceleration = PythonExpression(
+        [
+            "'", LaunchConfiguration("filter"), "' == 'ekf' and '",
+            LaunchConfiguration("process_model"), "' != 'jetski'",
+        ]
     )
     return LaunchDescription([
+        DeclareLaunchArgument(
+            "filter",
+            default_value="ekf",
+            choices=["ekf", "inekf"],
+            description="Filter: the 15-state EKF or the invariant EKF",
+        ),
         DeclareLaunchArgument(
             "process_model",
             default_value="jetski",
             choices=["jetski", "constant_acceleration"],
-            description="Model the filter predicts with",
+            description="Model the EKF predicts with; unused by the InEKF",
         ),
         DeclareLaunchArgument(
             "rpp_workspace",
@@ -37,7 +55,12 @@ def generate_launch_description():
             default_value=str(
                 share_directory / "config" / "jetski_localization.yaml"
             ),
-            description="Parameters of the rpp_localization node",
+            description="Parameters of the EKF and of navsat_pose_node",
+        ),
+        DeclareLaunchArgument(
+            "inekf_parameters",
+            default_value=str(share_directory / "config" / "jetski_inekf.yaml"),
+            description="Parameters of the invariant EKF",
         ),
         ExecuteProcess(
             cmd=[
@@ -64,9 +87,15 @@ def generate_launch_description():
             name="localization_node",
             output="screen",
             parameters=[LaunchConfiguration("localization_parameters")],
-            condition=IfCondition(
-                PythonExpression(["not (", uses_jetski_model, ")"])
-            ),
+            condition=IfCondition(uses_constant_acceleration),
+        ),
+        Node(
+            package="rpp_localization",
+            executable="inekf_node",
+            name="inekf_node",
+            output="screen",
+            parameters=[LaunchConfiguration("inekf_parameters")],
+            condition=IfCondition(uses_inekf),
         ),
         Node(
             package="rpp_localization",
