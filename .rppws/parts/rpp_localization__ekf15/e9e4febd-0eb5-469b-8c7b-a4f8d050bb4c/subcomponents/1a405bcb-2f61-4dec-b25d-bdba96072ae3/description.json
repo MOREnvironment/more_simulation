@@ -1,0 +1,28 @@
+{
+    "Id": "1a405bcb-2f61-4dec-b25d-bdba96072ae3",
+    "Name": "JetskiNavModel",
+    "PluginType": "rpp_localization::NavModel15",
+    "PluginName": "rpp_localization::VehicleModel3DNavModel15",
+    "Library": "rpp_localization",
+    "SubcomponentSpec": {
+        "vehicle_model": "more_dynamics::VehicleModel3D"
+    },
+    "Subcomponents": {
+        "vehicle_model": {
+            "Id": "50997bd5-4802-4160-9d25-e2283e344a65",
+            "PluginType": "more_dynamics::VehicleModel3D",
+            "PluginName": "more_dynamics::HullVessel",
+            "SlotName": "vehicle_model",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": {
+        "Id": "e9e4febd-0eb5-469b-8c7b-a4f8d050bb4c",
+        "PluginType": "rpp_localization::LocalizationFilter15",
+        "PluginName": "rpp_localization::Ekf15",
+        "SlotName": "model",
+        "Library": "rpp_localization",
+        "IsLinked": false
+    }
+}

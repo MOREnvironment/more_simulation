@@ -1,0 +1,10 @@
+# Overrides of jetski_localization.yaml for predicting with the jetski
+# dynamics instead of a constant-acceleration model. The launch file adds
+# rpp_workspace, which holds the jetski filter composition.
+/**:
+  ros__parameters:
+    configuration: jetski
+
+    # Throttle arrives as linear x and steering as angular z of cmd_vel.
+    use_control: true
+    control_config: [true, false, false, false, false, true]

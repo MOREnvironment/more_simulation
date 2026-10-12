@@ -1,0 +1,17 @@
+{
+    "Id": "210e896b-c82c-43b2-9d65-17e12347f3b9",
+    "Name": "NavImu",
+    "PluginType": "more_sensors::Sensor",
+    "PluginName": "more_sensors::IMU",
+    "Library": "more_sensors",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "cc39e58c-0efb-4a2f-b56d-8f0cc20530d3",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::HullVessel",
+        "SlotName": "sensors",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

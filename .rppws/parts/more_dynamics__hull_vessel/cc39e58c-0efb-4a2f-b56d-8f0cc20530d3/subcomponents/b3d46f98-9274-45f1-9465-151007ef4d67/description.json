@@ -1,0 +1,17 @@
+{
+    "Id": "b3d46f98-9274-45f1-9465-151007ef4d67",
+    "Name": "LinearSurfaceHydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::LinearSurfaceHydrostatics",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "cc39e58c-0efb-4a2f-b56d-8f0cc20530d3",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::HullVessel",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}
