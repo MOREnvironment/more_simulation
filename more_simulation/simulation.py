@@ -7,7 +7,7 @@ from rpp_py.data_manager import DataManager
 DataManager() # triggers sourcing of rpp_plugin_types
 from more_common.casadi_graph import RppCasadiGraph
 from rpp_plugin_types.more_dynamics import VehicleModel3D
-from rpp_py.context_builder import ComponentContextBuilder
+from rpp_py.context_builder import ComponentRuntimeBuilder
 
 
 class Simulation:
@@ -36,7 +36,7 @@ class Simulation:
         self.results = []
 
         data_manager = DataManager(workspace_path=rpp_workspace)
-        self.context_builder = ComponentContextBuilder(
+        self.context_builder = ComponentRuntimeBuilder(
             data_manager=data_manager
         )
         self.rpp_context = self.context_builder.build_script_from_library(
@@ -44,10 +44,38 @@ class Simulation:
             self.RPP_SCRIPT_NAME,
             configuration=rpp_configuration,
         )
-        self.rpp_context.initialize()
-        self.vessels: List[VehicleModel3D] = self.rpp_context.get_component(
-            "vessels"
-        )
+        try:
+            self.rpp_context.configure().require_success("configure simulation")
+            self.rpp_context.activate().require_success("activate simulation")
+            context = self.rpp_context.get_context()
+            context.activate_subcomponents().require_success("activate simulation components")
+            self.vessels: List[VehicleModel3D] = list(
+                context.enumerate_subcomponent_instances("vessels"))
+        except BaseException:
+            try:
+                self.close()
+            except Exception as error:
+                self.rpp_context.get_context().get_logger().error(
+                    f"Simulation startup cleanup failed: {error}"
+                )
+            raise
+
+    def close(self):
+        """Stop the component tree and release its runtime resources."""
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
+        try:
+            self.rpp_context.get_context().deactivate_subcomponents().require_success(
+                "deactivate simulation components")
+            self.rpp_context.deactivate().result.require_success(
+                "deactivate simulation"
+            )
+        finally:
+            try:
+                self.rpp_context.cleanup().require_success("cleanup simulation")
+            finally:
+                self.rpp_context.close()
 
     def run(self):
         """Run every configured vessel and retain each simulation result."""

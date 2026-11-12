@@ -9,8 +9,10 @@ from pathlib import Path
 import casadi as ca
 import numpy as np
 import rclpy
+from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 from rclpy.qos import (
     DurabilityPolicy,
     HistoryPolicy,
@@ -19,6 +21,7 @@ from rclpy.qos import (
 )
 from std_msgs.msg import Float64MultiArray
 from std_srvs.srv import Trigger
+from tf2_ros import TransformBroadcaster
 
 from more_common.casadi_graph import RppCasadiGraph
 from more_simulation.sensor_publishing import SensorPublisher
@@ -91,6 +94,11 @@ class SimulationRos(Node):
         self._child_frame_id = self.declare_parameter(
             "child_frame_id", "base_link"
         ).value
+        self._tf_broadcaster = (
+            TransformBroadcaster(self)
+            if self.declare_parameter("publish_tf", True).value
+            else None
+        )
         self._prefix_sensor_topics_with_sim = bool(
             self.declare_parameter(
                 "prefix_sensor_topics_with_sim", False
@@ -451,9 +459,18 @@ class SimulationRos(Node):
         state_message = Float64MultiArray()
         state_message.data = vehicle_state.tolist()
         self._state_publisher.publish(state_message)
-        self._odometry_publisher.publish(
-            self._odometry_message(vehicle_state, ros_time_nanoseconds)
-        )
+        odometry = self._odometry_message(vehicle_state, ros_time_nanoseconds)
+        self._odometry_publisher.publish(odometry)
+        if self._tf_broadcaster is not None:
+            transform = TransformStamped()
+            transform.header = odometry.header
+            transform.child_frame_id = self._child_frame_id
+            position = odometry.pose.pose.position
+            transform.transform.translation.x = position.x
+            transform.transform.translation.y = position.y
+            transform.transform.translation.z = position.z
+            transform.transform.rotation = odometry.pose.pose.orientation
+            self._tf_broadcaster.sendTransform(transform)
         self._sensor_publisher.publish(
             vehicle_state,
             ros_time_nanoseconds,
@@ -515,15 +532,23 @@ class SimulationRos(Node):
         ) / 1_000_000_000
 
     def destroy_node(self) -> bool:
-        if self._plot_time:
-            self._update_realtime_plots(force=True)
-            if self._plot_save_directory is not None:
-                self._save_realtime_plots()
-            if self._plt is not None:
-                self._plt.ioff()
-                if self._plot_save_directory is None:
-                    self._plt.show()
-        return super().destroy_node()
+        try:
+            if self._plot_time:
+                self._update_realtime_plots(force=True)
+                if self._plot_save_directory is not None:
+                    self._save_realtime_plots()
+                if self._plt is not None:
+                    self._plt.ioff()
+                    if self._plot_save_directory is None:
+                        self._plt.show()
+        finally:
+            try:
+                result = super().destroy_node()
+            finally:
+                simulation = getattr(self, "_simulation", None)
+                if simulation is not None:
+                    simulation.close()
+        return result
 
     def _initialize_realtime_plots(self) -> None:
         if self._plot_save_directory is not None:
@@ -773,14 +798,19 @@ class SimulationRos(Node):
 
 def main(args: list[str] | None = None) -> None:
     rclpy.init(args=args)
-    node = SimulationRos()
+    node = None
     try:
+        node = SimulationRos()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        try:
+            if node is not None:
+                node.destroy_node()
+        finally:
+            if rclpy.ok():
+                rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,62 @@
+name: Library CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Library tests
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/coe-marble/rpp-test-container:lyrical-ubuntu26.04-capnp1.1.0-v1
+    defaults:
+      run:
+        shell: bash
+    env:
+      ROS_DISTRO: lyrical
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Check out repository under test
+        uses: actions/checkout@v4
+        with:
+          path: libraries/more_simulation
+          persist-credentials: false
+      - name: Check out RPP integration dependencies
+        uses: actions/checkout@v4
+        with:
+          repository: coe-marble/rpp_dev
+          ref: ${{ github.event.pull_request.base.ref || github.ref_name }}
+          path: rpp_dev
+          submodules: recursive
+          token: ${{ secrets.RPP_CI_TOKEN || github.token }}
+          persist-credentials: false
+      - name: Check out more_common
+        uses: actions/checkout@v4
+        with:
+          repository: MOREnvironment/more_common
+          ref: ${{ github.event.pull_request.base.ref || github.ref_name }}
+          path: libraries/more_common
+          persist-credentials: false
+      - name: Check out more_dynamics
+        uses: actions/checkout@v4
+        with:
+          repository: MOREnvironment/more_dynamics
+          ref: ${{ github.event.pull_request.base.ref || github.ref_name }}
+          path: libraries/more_dynamics
+          persist-credentials: false
+      - name: Run library CI
+        run: bash libraries/more_simulation/.github/scripts/ci.sh

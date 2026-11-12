@@ -13,7 +13,10 @@ def main() -> None:
         rpp_workspace=arguments.rpp_workspace,
         rpp_configuration=arguments.rpp_configuration,
     )
-    simulation.run()
+    try:
+        simulation.run()
+    finally:
+        simulation.close()
     plot_results(simulation.results)
 
 

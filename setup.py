@@ -12,6 +12,8 @@ rppws_data_files = [
     )
     for path in sorted(rppws_root.rglob("*"))
     if path.is_file()
+    and "__pycache__" not in path.parts
+    and path.suffix not in {".pyc", ".pyo"}
 ]
 
 
